@@ -42,7 +42,7 @@ This project serves as an end-to-end experiment combining computer vision, deep 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/manga-cleaner.git
+git clone https://github.com/Teemo4621/manga-cleaner.git
 cd manga-cleaner
 ```
 
