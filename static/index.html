@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MangaCleaner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0f1117;
+      --card:    #1a1d27;
+      --border:  rgba(255,255,255,0.08);
+      --accent:  #6366f1;
+      --text:    #e4e8f0;
+      --muted:   #6b7280;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px 60px;
+      gap: 32px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .dot {
+      width: 10px; height: 10px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent);
+    }
+    h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+
+    .upload-zone {
+      width: 100%;
+      max-width: 560px;
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 48px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: var(--card);
+    }
+    .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: rgba(99,102,241,0.05); }
+    .upload-zone svg { margin-bottom: 16px; opacity: 0.4; }
+    .upload-zone p { color: var(--muted); font-size: 14px; line-height: 1.7; }
+    .upload-zone strong { color: var(--text); }
+
+    #overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    #overlay.show { display: flex; }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid rgba(255,255,255,0.15);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #overlay p { color: var(--muted); font-size: 14px; }
+
+    #result { display: none; width: 100%; max-width: 1100px; flex-direction: column; gap: 24px; }
+    #result.show { display: flex; }
+
+    .result-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .view-tabs { display: flex; background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .view-tab {
+      padding: 7px 16px; font-size: 13px; cursor: pointer;
+      background: none; border: none; color: var(--muted);
+      transition: all 0.15s;
+    }
+    .view-tab.active { background: var(--accent); color: #fff; }
+
+    .btn-group { display: flex; gap: 8px; }
+    .btn {
+      padding: 7px 16px;
+      border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text);
+      font-size: 13px; cursor: pointer;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .btn:hover { background: #252940; border-color: rgba(255,255,255,0.15); }
+    .btn.primary { background: var(--accent); border-color: transparent; color: #fff; }
+    .btn.primary:hover { background: #4f52d4; }
+
+    .canvas-wrap {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .split-view {
+      display: flex;
+    }
+    .split-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .split-label {
+      padding: 10px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+    }
+    .split-panel img {
+      width: 100%;
+      display: block;
+    }
+    .split-divider {
+      width: 1px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .single-view img {
+      width: 100%;
+      display: block;
+    }
+
+    .upload-again {
+      text-align: center;
+      color: var(--muted); font-size: 13px; cursor: pointer;
+    }
+    .upload-again span { color: var(--accent); text-decoration: underline; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="dot"></div>
+    <h1>MangaCleaner</h1>
+  </header>
+
+  <div class="upload-zone" id="upload-zone">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <circle cx="8.5" cy="8.5" r="1.5"/>
+      <polyline points="21 15 16 10 5 21"/>
+    </svg>
+    <p><strong>ลากภาพมังงะมาวาง</strong><br>หรือคลิกเพื่อเลือกไฟล์ — รองรับ JPG, PNG</p>
+  </div>
+  <input type="file" id="file-input" accept="image/*" style="display:none;">
+
+  <div id="overlay">
+    <div class="spinner"></div>
+    <p>AI กำลังลบข้อความ...</p>
+  </div>
+
+  <div id="result">
+
+    <div class="result-toolbar">
+      <div class="view-tabs">
+        <button class="view-tab active" data-view="split">เปรียบเทียบ</button>
+        <button class="view-tab" data-view="before">ต้นฉบับ</button>
+        <button class="view-tab" data-view="after">ผลลัพธ์</button>
+      </div>
+      <div class="btn-group">
+        <button class="btn" id="btn-dl-orig">ดาวน์โหลดต้นฉบับ</button>
+        <button class="btn primary" id="btn-dl-clean">ดาวน์โหลดผลลัพธ์</button>
+      </div>
+    </div>
+
+    <div class="canvas-wrap" id="view-split">
+      <div class="split-view">
+        <div class="split-panel">
+          <div class="split-label">ต้นฉบับ</div>
+          <img id="img-before-split" src="" alt="ต้นฉบับ">
+        </div>
+        <div class="split-divider"></div>
+        <div class="split-panel">
+          <div class="split-label">ผลลัพธ์ (AI ลบข้อความ)</div>
+          <img id="img-after-split" src="" alt="ผลลัพธ์">
+        </div>
+      </div>
+    </div>
+
+    <div class="canvas-wrap" id="view-before" style="display:none;">
+      <div class="single-view"><img id="img-before-single" src="" alt="ต้นฉบับ"></div>
+    </div>
+
+    <div class="canvas-wrap" id="view-after" style="display:none;">
+      <div class="single-view"><img id="img-after-single" src="" alt="ผลลัพธ์"></div>
+    </div>
+
+    <p class="upload-again">อัปโหลดภาพใหม่ — <span id="btn-reset">คลิกที่นี่</span></p>
+  </div>
+
+  <script>
+    const fileInput   = document.getElementById('file-input');
+    const uploadZone  = document.getElementById('upload-zone');
+    const overlay     = document.getElementById('overlay');
+    const resultEl    = document.getElementById('result');
+
+    let originalB64 = '';
+    let cleanedB64  = '';
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => {
+      if (e.target.files[0]) processFile(e.target.files[0]);
+      fileInput.value = '';
+    });
+
+    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
+    uploadZone.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadZone.classList.remove('drag');
+      const f = e.dataTransfer.files[0];
+      if (f && f.type.startsWith('image/')) processFile(f);
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      resultEl.classList.remove('show');
+      uploadZone.style.display = '';
+    });
+
+    async function processFile(file) {
+      uploadZone.style.display = 'none';
+      resultEl.classList.remove('show');
+      overlay.classList.add('show');
+
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('conf', 0.15);
+      fd.append('dilate', 3);
+
+      try {
+        const res  = await fetch('/api/process', { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (!data.success) throw new Error(data.error || 'ไม่สำเร็จ');
+
+        originalB64 = data.original_image;
+        cleanedB64  = data.cleaned_image;
+
+        document.getElementById('img-before-split').src = originalB64;
+        document.getElementById('img-before-single').src = originalB64;
+        document.getElementById('img-after-split').src   = cleanedB64;
+        document.getElementById('img-after-single').src  = cleanedB64;
+
+        overlay.classList.remove('show');
+        resultEl.classList.add('show');
+        setView('split');
+
+      } catch (err) {
+        overlay.classList.remove('show');
+        uploadZone.style.display = '';
+        alert('เกิดข้อผิดพลาด: ' + err.message);
+      }
+    }
+
+    const views = ['split', 'before', 'after'];
+    document.querySelectorAll('.view-tab').forEach(tab => {
+      tab.addEventListener('click', () => setView(tab.dataset.view));
+    });
+
+    function setView(v) {
+      document.querySelectorAll('.view-tab').forEach(t =>
+        t.classList.toggle('active', t.dataset.view === v)
+      );
+      views.forEach(name => {
+        document.getElementById('view-' + name).style.display = name === v ? '' : 'none';
+      });
+    }
+
+    document.getElementById('btn-dl-orig').addEventListener('click', () => {
+      if (originalB64) dlB64(originalB64, 'original.jpg');
+    });
+    document.getElementById('btn-dl-clean').addEventListener('click', () => {
+      if (cleanedB64) dlB64(cleanedB64, 'cleaned.jpg');
+    });
+
+    function dlB64(b64, filename) {
+      const a = document.createElement('a');
+      a.href = b64; a.download = filename; a.click();
+    }
+  </script>
+</body>
+</html>
