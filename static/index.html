@@ -97,7 +97,7 @@
     }
     .view-tab.active { background: var(--accent); color: #fff; }
 
-    .btn-group { display: flex; gap: 8px; }
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
     .btn {
       padding: 7px 16px;
       border-radius: 8px; border: 1px solid var(--border);
@@ -108,6 +108,87 @@
     .btn:hover { background: #252940; border-color: rgba(255,255,255,0.15); }
     .btn.primary { background: var(--accent); border-color: transparent; color: #fff; }
     .btn.primary:hover { background: #4f52d4; }
+
+    /* Debug Panel & Stats */
+    .debug-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .debug-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .debug-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stats-badges {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge b { color: var(--accent); }
+    
+    .debug-controls {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .control-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .control-item input[type="range"] {
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .control-val {
+      font-weight: 600;
+      color: var(--text);
+      min-width: 32px;
+    }
+
+    .legend-bar {
+      display: flex;
+      gap: 14px;
+      font-size: 11px;
+      color: var(--muted);
+      padding: 8px 14px;
+      background: rgba(0,0,0,0.25);
+      border-bottom: 1px solid var(--border);
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
 
     .canvas-wrap {
       width: 100%;
@@ -169,7 +250,7 @@
       <circle cx="8.5" cy="8.5" r="1.5"/>
       <polyline points="21 15 16 10 5 21"/>
     </svg>
-    <p><strong>ลากภาพมังงะมาวาง</strong><br>หรือคลิกเพื่อเลือกไฟล์ — รองรับ JPG, PNG</p>
+    <p><strong>ลากภาพมังงะมาวาง หรือกด Ctrl + V</strong><br>หรือคลิกเพื่อเลือกไฟล์ — รองรับ JPG, PNG, คลิปบอร์ด</p>
   </div>
   <input type="file" id="file-input" accept="image/*" style="display:none;">
 
@@ -180,13 +261,42 @@
 
   <div id="result">
 
+    <div class="debug-panel">
+      <div class="debug-header">
+        <div class="debug-title">📊 Debug Info & Metrics</div>
+        <div class="stats-badges">
+          <div class="badge">💬 บอลลูน: <b id="stat-bubbles">0</b></div>
+          <div class="badge">⚡ Inference: <b id="stat-infer">0ms</b></div>
+          <div class="badge">🧹 Inpaint: <b id="stat-clean">0ms</b></div>
+          <div class="badge">⏱️ รวม: <b id="stat-total">0ms</b></div>
+        </div>
+      </div>
+      <div class="debug-controls">
+        <div class="control-item">
+          <span>Confidence:</span>
+          <input type="range" id="param-conf" min="0.05" max="0.80" step="0.05" value="0.15">
+          <span class="control-val" id="val-conf">0.15</span>
+        </div>
+        <div class="control-item">
+          <span>Dilate (ขยาย Mask):</span>
+          <input type="range" id="param-dilate" min="0" max="8" step="1" value="2">
+          <span class="control-val" id="val-dilate">2</span>
+        </div>
+        <button class="btn primary" id="btn-reprocess" style="padding: 5px 14px; font-size: 12px;">🔄 ประมวลผลใหม่</button>
+      </div>
+    </div>
+
     <div class="result-toolbar">
       <div class="view-tabs">
         <button class="view-tab active" data-view="split">เปรียบเทียบ</button>
         <button class="view-tab" data-view="before">ต้นฉบับ</button>
         <button class="view-tab" data-view="after">ผลลัพธ์</button>
+        <button class="view-tab" data-view="debug-overlay">🔍 Debug Overlay</button>
+        <button class="view-tab" data-view="debug-text">🎭 Text Mask</button>
+        <button class="view-tab" data-view="debug-bubble">🫧 Bubble Mask</button>
       </div>
       <div class="btn-group">
+        <button class="btn" id="btn-dl-debug">ดาวน์โหลด Debug</button>
         <button class="btn" id="btn-dl-orig">ดาวน์โหลดต้นฉบับ</button>
         <button class="btn primary" id="btn-dl-clean">ดาวน์โหลดผลลัพธ์</button>
       </div>
@@ -214,6 +324,23 @@
       <div class="single-view"><img id="img-after-single" src="" alt="ผลลัพธ์"></div>
     </div>
 
+    <div class="canvas-wrap" id="view-debug-overlay" style="display:none;">
+      <div class="legend-bar">
+        <div class="legend-item"><div class="legend-dot" style="background:#00dc64;"></div> Bounding Box & Confidence</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#32b4eb;"></div> Bubble Region</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff0000;"></div> Detected Text Mask</div>
+      </div>
+      <div class="single-view"><img id="img-debug-overlay" src="" alt="Debug Overlay"></div>
+    </div>
+
+    <div class="canvas-wrap" id="view-debug-text" style="display:none;">
+      <div class="single-view"><img id="img-debug-text" src="" alt="Text Mask"></div>
+    </div>
+
+    <div class="canvas-wrap" id="view-debug-bubble" style="display:none;">
+      <div class="single-view"><img id="img-debug-bubble" src="" alt="Bubble Mask"></div>
+    </div>
+
     <p class="upload-again">อัปโหลดภาพใหม่ — <span id="btn-reset">คลิกที่นี่</span></p>
   </div>
 
@@ -223,8 +350,20 @@
     const overlay     = document.getElementById('overlay');
     const resultEl    = document.getElementById('result');
 
+    const paramConf   = document.getElementById('param-conf');
+    const paramDilate = document.getElementById('param-dilate');
+    const valConf     = document.getElementById('val-conf');
+    const valDilate   = document.getElementById('val-dilate');
+    const btnReprocess = document.getElementById('btn-reprocess');
+
+    paramConf.addEventListener('input', () => valConf.textContent = paramConf.value);
+    paramDilate.addEventListener('input', () => valDilate.textContent = paramDilate.value);
+
+    let currentFile = null;
     let originalB64 = '';
     let cleanedB64  = '';
+    let debugOverlayB64 = '';
+    let currentView = 'split';
 
     uploadZone.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', e => {
@@ -241,20 +380,58 @@
       if (f && f.type.startsWith('image/')) processFile(f);
     });
 
+    window.addEventListener('paste', e => {
+      if (overlay.classList.contains('show')) return;
+      const clipboardData = e.clipboardData || window.clipboardData;
+      if (!clipboardData) return;
+
+      const items = clipboardData.items;
+      if (items) {
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type && items[i].type.startsWith('image/')) {
+            const file = items[i].getAsFile();
+            if (file) {
+              e.preventDefault();
+              processFile(file);
+              return;
+            }
+          }
+        }
+      }
+
+      const files = clipboardData.files;
+      if (files && files.length > 0) {
+        for (let i = 0; i < files.length; i++) {
+          if (files[i].type && files[i].type.startsWith('image/')) {
+            e.preventDefault();
+            processFile(files[i]);
+            return;
+          }
+        }
+      }
+    });
+
     document.getElementById('btn-reset').addEventListener('click', () => {
       resultEl.classList.remove('show');
       uploadZone.style.display = '';
+      currentFile = null;
+    });
+
+    btnReprocess.addEventListener('click', () => {
+      if (currentFile) {
+        processFile(currentFile);
+      }
     });
 
     async function processFile(file) {
+      currentFile = file;
       uploadZone.style.display = 'none';
-      resultEl.classList.remove('show');
       overlay.classList.add('show');
 
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('conf', 0.15);
-      fd.append('dilate', 3);
+      fd.append('conf', paramConf.value);
+      fd.append('dilate', paramDilate.value);
 
       try {
         const res  = await fetch('/api/process', { method: 'POST', body: fd });
@@ -270,9 +447,21 @@
         document.getElementById('img-after-split').src   = cleanedB64;
         document.getElementById('img-after-single').src  = cleanedB64;
 
+        if (data.debug) {
+          debugOverlayB64 = data.debug.overlay_image;
+          document.getElementById('img-debug-overlay').src = data.debug.overlay_image;
+          document.getElementById('img-debug-text').src = data.debug.text_mask_image;
+          document.getElementById('img-debug-bubble').src = data.debug.bubble_mask_image;
+
+          document.getElementById('stat-bubbles').textContent = data.debug.bubble_count;
+          document.getElementById('stat-infer').textContent = data.debug.infer_time_ms + 'ms';
+          document.getElementById('stat-clean').textContent = data.debug.clean_time_ms + 'ms';
+          document.getElementById('stat-total').textContent = data.debug.total_time_ms + 'ms';
+        }
+
         overlay.classList.remove('show');
         resultEl.classList.add('show');
-        setView('split');
+        setView(currentView);
 
       } catch (err) {
         overlay.classList.remove('show');
@@ -281,17 +470,19 @@
       }
     }
 
-    const views = ['split', 'before', 'after'];
+    const views = ['split', 'before', 'after', 'debug-overlay', 'debug-text', 'debug-bubble'];
     document.querySelectorAll('.view-tab').forEach(tab => {
       tab.addEventListener('click', () => setView(tab.dataset.view));
     });
 
     function setView(v) {
+      currentView = v;
       document.querySelectorAll('.view-tab').forEach(t =>
         t.classList.toggle('active', t.dataset.view === v)
       );
       views.forEach(name => {
-        document.getElementById('view-' + name).style.display = name === v ? '' : 'none';
+        const el = document.getElementById('view-' + name);
+        if (el) el.style.display = name === v ? '' : 'none';
       });
     }
 
@@ -300,6 +491,9 @@
     });
     document.getElementById('btn-dl-clean').addEventListener('click', () => {
       if (cleanedB64) dlB64(cleanedB64, 'cleaned.jpg');
+    });
+    document.getElementById('btn-dl-debug').addEventListener('click', () => {
+      if (debugOverlayB64) dlB64(debugOverlayB64, 'debug_overlay.jpg');
     });
 
     function dlB64(b64, filename) {
