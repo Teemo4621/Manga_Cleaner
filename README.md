@@ -1,25 +1,45 @@
 # Manga Cleaner 🧹
 
-An experimental full-stack project demonstrating how to integrate a deep learning segmentation model with a FastAPI backend and a modern web frontend to automatically detect and erase text inside manga speech bubbles while preserving the outer bubble borders and artwork. [demo](docs/assets/)
+An end-to-end AI-powered web application that automatically detects speech bubbles and erases text from manga and manhwa pages while cleanly preserving the bubble borders and background artwork.
 
-## 💡 Overview
+🌐 **Live Demo:** [https://mangacleaner-production.up.railway.app](https://mangacleaner-production.up.railway.app)
 
-This project serves as an end-to-end experiment combining computer vision, deep learning inference, and web technologies:
-1. **AI Segmentation**: Uses a YOLOv8 instance segmentation model fine-tuned on manga speech bubbles to identify balloon locations and polygons.
-2. **Text Isolation & Border Protection**: Applies adaptive thresholding and Connected Component Analysis (CCA) inside each bubble to isolate text strokes while keeping the bubble frame intact.
-3. **Telea Inpainting**: Seamlessly restores the text background using OpenCV inpainting.
-4. **FastAPI Backend**: Provides a fast, lightweight REST API for image processing.
-5. **Web UI**: A clean dark-mode web application for drag-and-drop uploading and before/after comparisons.
+---
+
+## 📸 Examples & Results
+
+### 1. Black & White Manga (B&W)
+
+| Original Image | Cleaned (Text Removed) |
+| :---: | :---: |
+| ![Original Manga](docs/assets/sample_manga_bw.jpg) | ![Cleaned Manga](docs/assets/sample_manga_bw_cleaned.jpg) |
+
+### 2. Full-Color Webtoon / Manhwa
+
+| Original Image | Cleaned (Text Removed) |
+| :---: | :---: |
+| ![Original Manhwa](docs/assets/sample_manhwa_color.jpg) | ![Cleaned Manhwa](docs/assets/sample_manhwa_color_cleaned.jpg) |
+
+---
+
+## 💡 Overview & Pipeline
+
+This project combines deep learning segmentation with computer vision algorithms:
+1. **AI Segmentation**: Uses a YOLOv8 instance segmentation model fine-tuned on speech bubbles to predict bubble polygons.
+2. **Text Isolation & Border Protection**: Applies adaptive thresholding and Connected Component Analysis (CCA) inside each bubble to isolate text strokes while safeguarding bubble outlines.
+3. **Telea Inpainting**: Seamlessly fills the isolated text regions using OpenCV inpainting.
+4. **FastAPI & Web UI**: Provides a responsive dark-theme interface with split-view comparison, image paste (Ctrl+V), and download options.
 
 ---
 
 ## ✨ Features
 
-- 🎯 **Accurate Balloon Detection**: Detects speech bubbles of varying shapes and orientations.
-- 🛡️ **Frame & Border Protection**: Separates outer frame strokes from text so bubble outlines are never accidentally deleted.
-- 🧹 **Complete Text Removal**: Uses contrast analysis and morphological closing to avoid leaving hollow or half-erased glyphs.
-- 🎨 **Inpainting Reconstruction**: Inpaints text regions smoothly with matching surrounding background tones.
-- 🖥️ **Interactive Web Interface**: Split-view and single-view modes with instant download options.
+- 🎯 **Accurate Balloon Detection**: Detects speech bubbles of varying shapes, orientations, and colors.
+- 🛡️ **Frame & Border Protection**: Separates outer frame strokes from text so bubble outlines are never erased.
+- 🧹 **Complete Text Removal**: Uses contrast analysis and morphological closing to eliminate hollow/half-erased glyphs.
+- 🎨 **Inpainting Reconstruction**: Inpaints text regions smoothly matching the surrounding bubble tone.
+- 📋 **Clipboard Support**: Paste images directly from your clipboard (`Ctrl+V` / `Cmd+V`).
+- 🖥️ **Interactive Web Interface**: Split-view and single-view modes with real-time debug visualization and batch processing.
 
 ---
 
@@ -28,7 +48,7 @@ This project serves as an end-to-end experiment combining computer vision, deep 
 - **Backend / API**: [FastAPI](https://fastapi.tiangolo.com/), [Uvicorn](https://www.uvicorn.org/)
 - **Computer Vision & AI**: [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics), [OpenCV](https://opencv.org/), [NumPy](https://numpy.org/)
 - **Frontend**: Vanilla HTML5, CSS3 (Modern Dark Theme), JavaScript (Fetch API)
-- **Package Management**: [uv](https://github.com/astral-sh/uv) / Pip
+- **Deployment**: [Railway](https://railway.app/), Docker
 
 ---
 
@@ -56,22 +76,9 @@ uv sync
 Or using `pip`:
 ```bash
 pip install -r requirements.txt
-# Or: pip install fastapi uvicorn opencv-python numpy ultralytics python-multipart
 ```
 
-### 3. Model Setup
-
-Make sure your fine-tuned model weight file `best.pt` is placed in the root directory:
-```
-manga_cleaner/
-├── best.pt              <-- YOLO segmentation model weights
-├── server.py
-├── static/
-│   └── index.html
-└── ...
-```
-
-### 4. Run the Application
+### 3. Run Locally
 
 Start the FastAPI server:
 ```bash
@@ -79,11 +86,26 @@ uv run server.py
 # Or: python server.py
 ```
 
-Then open your browser and navigate to:
+Then open your browser at:
 ```
 http://127.0.0.1:8000
 ```
 
+---
+
+## 🐳 Docker Deployment
+
+You can run the application containerized using Docker:
+
+```bash
+# Build Docker image
+docker build -t manga-cleaner .
+
+# Run container on port 8000
+docker run -p 8000:8000 manga-cleaner
+```
+
+---
 
 ## 🎖️ Credits & Acknowledgements
 
