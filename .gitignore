@@ -2,3 +2,4 @@ datasets
 .venv
 runs
 *.pt
+!best.pt
